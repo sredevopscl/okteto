@@ -8,7 +8,37 @@ version: 2.1
 orbs:
   win: circleci/windows@2.1.0
 jobs:
-  e2etest:
+  build:
+    docker:
+      - image: okteto/golang-ci:1.17.3
+    steps:
+      - checkout
+
+      - run:
+          command: go mod tidy && git diff --exit-code go.sum > /dev/null
+      - run:
+          name: Test
+          command: |
+            make test
+            bash <(curl -s https://codecov.io/bash)
+      - run: env VERSION_STRING=$CIRCLE_TAG make -j 3 build-all
+      - run: env VERSION_STRING=$CIRCLE_TAG make latest
+      - persist_to_workspace:
+          root: .
+          paths:
+            - bin
+      - save_cache:
+          key: v4-pkg-cache-{{ checksum "go.sum" }}
+          paths:
+            - ~/.cache/go-build
+            - /go/pkg
+      - store_artifacts:
+          path: bin
+          destination: binaries
+      - store_artifacts:
+          path: coverage.txt
+          destination: coverage.txt
+  integration:
     environment:
       OKTETO_USER: cindylopez
     docker:
@@ -18,6 +48,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - 14:34:10:32:01:82:71:b8:69:76:8e:56:dd:10:fc:13
+            - 7c:95:31:92:b4:7e:43:ae:83:d5:d4:4a:35:0a:51:ee
       - restore_cache:
           keys:
             - v4-pkg-cache-{{ checksum "go.sum" }}
@@ -34,11 +65,18 @@ jobs:
             cp $(pwd)/artifacts/bin/okteto-Linux-x86_64 /usr/local/bin/okteto
             /usr/local/bin/okteto login --token ${API_TOKEN}
             git clone https://github.com/okteto/installer.git ~/installer
-            ls ~/installer
+            git clone https://github.com/okteto/app.git ~/app
+            cp ~/installer/gcp/examples/integration/* ~/installer/gcp/
+            export TF_VAR_oktetoConfig='{
+                      chart = "/~/app/chart/okteto-enterprise"
+                      version = "0.10.4"
+                        }'
       - run:
           name: Integration tests
           environment:
             OKTETO_SKIP_CLEANUP: 'true'
+            NAME: 'integratione2e'
+            URL_INSTALLER: '~/installer/gcp'            
           command: make integration
       - save_cache:
           key: v4-pkg-cache-{{ checksum "go.sum" }}
@@ -47,13 +85,18 @@ jobs:
             - /go/pkg
       - store_artifacts:
           path: /root/.okteto
-  
 
 workflows:
   version: 2
   build-release:
     jobs:
-      - e2etest:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - integration:
+          requires:
+            - build
           filters:
             branches:
               only:
