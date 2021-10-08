@@ -40,7 +40,7 @@ test:
 
 .PHONY: integration
 integration:
-	 go test github.com/okteto/okteto/integration -tags=integration --count=1 -v -timeout 45m
+	 go test github.com/okteto/okteto/integration/installer_test.go -tags=integration --count=1 -v -timeout 45m
 
 .PHONY: build
 build:

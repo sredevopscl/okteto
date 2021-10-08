@@ -45,6 +45,9 @@ jobs:
       - image: okteto/dev:go1.17
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - 9e:44:fc:d6:31:60:41:41:69:82:4b:c6:89:79:40:33
       - restore_cache:
           keys:
             - v4-pkg-cache-{{ checksum "go.sum" }}
@@ -60,6 +63,7 @@ jobs:
             chmod +x /usr/local/bin/kubectl
             cp $(pwd)/artifacts/bin/okteto-Linux-x86_64 /usr/local/bin/okteto
             /usr/local/bin/okteto login --token ${API_TOKEN}
+            git clone https://github.com/okteto/installer.git ~/installer
       - run:
           name: Integration tests
           environment:
@@ -222,6 +226,7 @@ workflows:
                 - master
                 - /.*(e2e)/
                 - /.*(integration)/
+                - /.*(mario)/
       - mock-release:
           context: GKE
           requires:
