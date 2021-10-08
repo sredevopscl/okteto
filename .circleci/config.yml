@@ -8,36 +8,6 @@ version: 2.1
 orbs:
   win: circleci/windows@2.1.0
 jobs:
-  build:
-    docker:
-      - image: okteto/golang-ci:1.17.3
-    steps:
-      - checkout
-
-      - run:
-          command: go mod tidy && git diff --exit-code go.sum > /dev/null
-      - run:
-          name: Test
-          command: |
-            make test
-            bash <(curl -s https://codecov.io/bash)
-      - run: env VERSION_STRING=$CIRCLE_TAG make -j 3 build-all
-      - run: env VERSION_STRING=$CIRCLE_TAG make latest
-      - persist_to_workspace:
-          root: .
-          paths:
-            - bin
-      - save_cache:
-          key: v4-pkg-cache-{{ checksum "go.sum" }}
-          paths:
-            - ~/.cache/go-build
-            - /go/pkg
-      - store_artifacts:
-          path: bin
-          destination: binaries
-      - store_artifacts:
-          path: coverage.txt
-          destination: coverage.txt
   integration:
     environment:
       OKTETO_USER: cindylopez
@@ -54,6 +24,8 @@ jobs:
             - v4-pkg-cache-{{ checksum "go.sum" }}
       - attach_workspace:
           at: ./artifacts
+      - run:
+          command: go mod tidy && git diff --exit-code go.sum > /dev/null
       - run:
           name: Prepare env
           command: |
@@ -90,13 +62,7 @@ workflows:
   version: 2
   build-release:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/
-      - integration:
-          requires:
-            - build
+      - integration:          
           filters:
             branches:
               only:
