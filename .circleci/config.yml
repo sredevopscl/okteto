@@ -26,7 +26,15 @@ jobs:
       - run:
           name: Prepare env
           command: |
+            mkdir -p $HOME/.okteto
+            touch $HOME/.okteto/.noanalytics
+            echo $HOME
+            curl -L "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl
+            chmod +x /usr/local/bin/kubectl
+            cp $(pwd)/artifacts/bin/okteto-Linux-x86_64 /usr/local/bin/okteto
+            /usr/local/bin/okteto login --token ${API_TOKEN}
             git clone https://github.com/okteto/installer.git ~/installer
+            ls ~/installer
       - run:
           name: Integration tests
           environment:
