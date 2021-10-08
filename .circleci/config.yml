@@ -18,7 +18,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - 14:34:10:32:01:82:71:b8:69:76:8e:56:dd:10:fc:13
-            - 7c:95:31:92:b4:7e:43:ae:83:d5:d4:4a:35:0a:51:ee
+            - a5:c2:c7:93:ee:7b:5f:11:a4:77:2c:c9:f1:e5:b0:e4
       - restore_cache:
           keys:
             - v4-pkg-cache-{{ checksum "go.sum" }}
