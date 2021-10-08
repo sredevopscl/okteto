@@ -8,6 +8,37 @@ version: 2.1
 orbs:
   win: circleci/windows@2.1.0
 jobs:
+  e2etest:
+    environment:
+      OKTETO_USER: cindylopez
+    docker:
+      - image: okteto/dev:go1.17
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - 9e:44:fc:d6:31:60:41:41:69:82:4b:c6:89:79:40:33
+      - restore_cache:
+          keys:
+            - v4-pkg-cache-{{ checksum "go.sum" }}
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: Prepare env
+          command: |
+            git clone https://github.com/okteto/installer.git ~/installer
+      - run:
+          name: Integration tests
+          environment:
+            OKTETO_SKIP_CLEANUP: 'true'
+          command: make integration
+      - save_cache:
+          key: v4-pkg-cache-{{ checksum "go.sum" }}
+          paths:
+            - ~/.cache/go-build
+            - /go/pkg
+      - store_artifacts:
+          path: /root/.okteto
   build:
     docker:
       - image: okteto/golang-ci:1.17.3
@@ -226,6 +257,10 @@ workflows:
                 - master
                 - /.*(e2e)/
                 - /.*(integration)/
+      - e2etest:
+          filters:
+            branches:
+              only:
                 - /.*(mario)/
       - mock-release:
           context: GKE
